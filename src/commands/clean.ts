@@ -5,17 +5,21 @@ import {
   getLocalBranches,
   removeWorktree,
   getMainRoot,
+  getCurrentWorktreePath,
 } from "../lib/git.js";
+import { signalCd } from "../lib/shell.js";
 
 export async function cleanCommand(): Promise<void> {
   let worktrees;
   let branches: string[];
   let mainRoot: string;
+  let currentPath: string;
 
   try {
     worktrees = listWorktrees();
     branches = getLocalBranches();
     mainRoot = getMainRoot();
+    currentPath = getCurrentWorktreePath();
   } catch (err) {
     console.error(chalk.red(String(err)));
     process.exit(1);
@@ -48,12 +52,19 @@ export async function cleanCommand(): Promise<void> {
     return;
   }
 
+  const removedPaths = new Set<string>();
   for (const wt of stale) {
     try {
       removeWorktree(wt.path, mainRoot);
+      removedPaths.add(wt.path);
       console.log(chalk.green(`  ✓ Removed ${wt.branch}`));
     } catch (err) {
       console.error(chalk.red(`  ✗ Failed to remove ${wt.branch}: ${err}`));
     }
+  }
+
+  if (removedPaths.has(currentPath)) {
+    console.log(chalk.cyan("Returning to main worktree"));
+    signalCd(mainRoot);
   }
 }
