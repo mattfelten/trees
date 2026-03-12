@@ -12,6 +12,8 @@
 	"scripts": {
 		"build": "tsup",
 		"dev": "tsup --watch",
+		"test": "vitest run",
+		"test:watch": "vitest",
 		"release": "auto shipit"
 	},
 	"dependencies": {
@@ -27,6 +29,7 @@
 		"@auto-it/released": "^11.3.6",
 		"@types/node": "^20.0.0",
 		"tsup": "^8.0.0",
-		"typescript": "^5.0.0"
+		"typescript": "^5.0.0",
+		"vitest": "^4.1.0"
 	}
 }

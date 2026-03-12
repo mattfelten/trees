@@ -26,14 +26,17 @@ export function getRepoRoot(cwd = process.cwd()): string {
   return root;
 }
 
+export function repoNameFromUrl(url: string): string | null {
+  const match = url.match(/[:/]([^/]+\/[^/]+?)(?:\.git)?$/);
+  if (match) return match[1].replace(/\//g, "-");
+  return null;
+}
+
 export function getRepoName(cwd = process.cwd()): string {
   const remoteUrl = tryExec("git remote get-url origin", cwd);
   if (remoteUrl) {
-    // Strip protocol/host/org, get last path segment(s)
-    const match = remoteUrl.match(/[:/]([^/]+\/[^/]+?)(?:\.git)?$/);
-    if (match) {
-      return match[1].replace(/\//g, "-");
-    }
+    const name = repoNameFromUrl(remoteUrl);
+    if (name) return name;
   }
   // Fallback: directory name
   return exec("basename $(git rev-parse --show-toplevel)", cwd);
@@ -98,8 +101,13 @@ export function removeWorktree(
 }
 
 export function getLocalBranches(cwd = process.cwd()): string[] {
-  const out = exec("git branch --format=%(refname:short)", cwd);
-  return out.split("\n").filter(Boolean);
+  const result = spawnSync(
+    "git",
+    ["branch", "--format=%(refname:short)"],
+    { cwd, encoding: "utf8" }
+  );
+  if (result.status !== 0) throw new Error(result.stderr);
+  return result.stdout.split("\n").filter(Boolean);
 }
 
 export function getCurrentWorktreePath(cwd = process.cwd()): string {
