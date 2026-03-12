@@ -81,6 +81,18 @@ export function branchExists(branch: string, cwd = process.cwd()): boolean {
   return tryExec(`git rev-parse --verify refs/heads/${branch}`, cwd) !== null;
 }
 
+export function remoteBranchExists(
+  branch: string,
+  cwd = process.cwd()
+): boolean {
+  return (
+    tryExec(
+      `git rev-parse --verify refs/remotes/origin/${branch}`,
+      cwd
+    ) !== null
+  );
+}
+
 export function addWorktree(
   targetPath: string,
   branch: string,
@@ -88,6 +100,12 @@ export function addWorktree(
 ): void {
   if (branchExists(branch, cwd)) {
     exec(`git worktree add "${targetPath}" "${branch}"`, cwd);
+  } else if (remoteBranchExists(branch, cwd)) {
+    // Create a local tracking branch from the remote
+    exec(
+      `git worktree add --track -b "${branch}" "${targetPath}" "origin/${branch}"`,
+      cwd
+    );
   } else {
     exec(`git worktree add -b "${branch}" "${targetPath}"`, cwd);
   }

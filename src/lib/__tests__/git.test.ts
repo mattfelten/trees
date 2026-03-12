@@ -8,6 +8,7 @@ import {
   getRepoRoot,
   listWorktrees,
   branchExists,
+  remoteBranchExists,
   addWorktree,
   removeWorktree,
   getLocalBranches,
@@ -33,6 +34,22 @@ function makeRepo(): string {
   git("add .", dir);
   git("commit -m init", dir);
   return dir;
+}
+
+/** Creates an origin repo and a local clone of it. */
+function makeRepoWithRemote(): { origin: string; local: string } {
+  const origin = makeRepo();
+  // Clone into a temp path that doesn't exist yet (git clone creates it)
+  const cloneBase = mkdtempSync(join(tmpdir(), "trees-clone-"));
+  rmSync(cloneBase, { recursive: true });
+  const local = realpathSync(
+    execSync(`git clone ${origin} ${cloneBase} && echo ${cloneBase}`, {
+      encoding: "utf8",
+    }).trim()
+  );
+  git("config user.email test@example.com", local);
+  git("config user.name Test", local);
+  return { origin, local };
 }
 
 // ---------------------------------------------------------------------------
@@ -178,6 +195,94 @@ describe("git lib (integration)", () => {
 
       removeWorktree(worktreeDir, repoDir);
       expect(listWorktrees(repoDir)).toHaveLength(1);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Remote branch detection and tracking worktree creation
+// ---------------------------------------------------------------------------
+
+describe("remote branch support", () => {
+  let origin: string;
+  let local: string;
+  let worktreeDir: string;
+
+  beforeEach(() => {
+    ({ origin, local } = makeRepoWithRemote());
+    worktreeDir = realpathSync(mkdtempSync(join(tmpdir(), "trees-wt-")));
+    rmSync(worktreeDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(origin, { recursive: true, force: true });
+    rmSync(local, { recursive: true, force: true });
+    rmSync(worktreeDir, { recursive: true, force: true });
+  });
+
+  describe("remoteBranchExists", () => {
+    it("returns false when the branch does not exist on origin", () => {
+      expect(remoteBranchExists("no-such-branch", local)).toBe(false);
+    });
+
+    it("returns true after a branch is pushed to origin and fetched", () => {
+      // Create branch in origin
+      git("checkout -b remote-feature", origin);
+      writeFileSync(join(origin, "f.txt"), "x");
+      git("add .", origin);
+      git("commit -m feat", origin);
+      git("checkout main", origin);
+      // Fetch in the clone
+      git("fetch", local);
+
+      expect(remoteBranchExists("remote-feature", local)).toBe(true);
+    });
+
+    it("returns false for a branch that exists locally but not on origin", () => {
+      git("branch local-only", local);
+      expect(remoteBranchExists("local-only", local)).toBe(false);
+    });
+  });
+
+  describe("addWorktree with remote branch", () => {
+    it("creates a tracking worktree for a remote-only branch", () => {
+      // Push a new branch to origin, fetch it in local
+      git("checkout -b remote-only", origin);
+      writeFileSync(join(origin, "r.txt"), "r");
+      git("add .", origin);
+      git("commit -m remote", origin);
+      git("checkout main", origin);
+      git("fetch", local);
+
+      addWorktree(worktreeDir, "remote-only", local);
+
+      // Branch should exist locally now
+      expect(branchExists("remote-only", local)).toBe(true);
+
+      // Worktree should be registered
+      const wts = listWorktrees(local);
+      expect(wts.find((w) => w.branch === "remote-only")).toBeDefined();
+
+      // Branch should track origin
+      const upstream = execSync(
+        "git rev-parse --abbrev-ref remote-only@{upstream}",
+        { cwd: local, encoding: "utf8" }
+      ).trim();
+      expect(upstream).toBe("origin/remote-only");
+    });
+
+    it("does not set tracking for a purely new local branch", () => {
+      addWorktree(worktreeDir, "brand-new", local);
+
+      expect(branchExists("brand-new", local)).toBe(true);
+      // Querying upstream should fail (no tracking set)
+      expect(() =>
+        execSync("git rev-parse --abbrev-ref brand-new@{upstream}", {
+          cwd: local,
+          encoding: "utf8",
+          stdio: "pipe",
+        })
+      ).toThrow();
     });
   });
 });
