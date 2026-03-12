@@ -1,0 +1,12 @@
+{
+  "plugins": ["npm", "first-time-contributor", "released"],
+  "labels": [
+    { "name": "major", "changelogTitle": "💥 Breaking Changes", "releaseType": "major" },
+    { "name": "minor", "changelogTitle": "🚀 Features", "releaseType": "minor" },
+    { "name": "patch", "changelogTitle": "🐛 Bug Fixes", "releaseType": "patch" },
+    { "name": "documentation", "changelogTitle": "📝 Documentation", "releaseType": "none" },
+    { "name": "internal", "changelogTitle": "🏠 Internal", "releaseType": "none" },
+    { "name": "skip-release", "releaseType": "skip" },
+    { "name": "dependencies", "changelogTitle": "🔩 Dependencies", "releaseType": "none" }
+  ]
+}
