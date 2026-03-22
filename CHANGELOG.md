@@ -1,3 +1,15 @@
+# v0.1.2 (Sun Mar 22 2026)
+
+#### 🐛 Bug Fix
+
+- Improve CLI usability [#4](https://github.com/mattfelten/trees/pull/4) ([@mattfelten](https://github.com/mattfelten))
+
+#### Authors: 1
+
+- Matt Felten ([@mattfelten](https://github.com/mattfelten))
+
+---
+
 # v0.1.1 (Thu Mar 12 2026)
 
 :tada: This release contains work from a new contributor! :tada:
