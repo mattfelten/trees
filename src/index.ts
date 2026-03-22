@@ -10,7 +10,6 @@ import {
   configAddCommand,
   configClearCommand,
 } from "./commands/config.js";
-import { installCommand } from "./commands/install.js";
 
 const program = new Command();
 
@@ -20,14 +19,9 @@ program
   .version("0.1.0");
 
 program
-  .argument("[branch]", "Branch to switch to (creates worktree if needed)")
-  .action(async (branch?: string) => {
-    if (branch) {
-      await upCommand(branch);
-    } else {
-      program.help();
-    }
-  });
+  .command("up <branch>")
+  .description("Switch to a branch (creates worktree if needed)")
+  .action(upCommand);
 
 program
   .command("down")
@@ -84,11 +78,6 @@ const configClear = configCmd
   });
 
 void configClear;
-
-program
-  .command("install")
-  .description("Install the tree shell function into ~/.zshrc / ~/.bashrc")
-  .action(installCommand);
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err);

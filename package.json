@@ -7,13 +7,15 @@
 		"trees": "./dist/index.js"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"postinstall.js"
 	],
 	"scripts": {
 		"build": "tsup && chmod +x dist/index.js",
 		"dev": "tsup --watch",
 		"test": "vitest run",
 		"test:watch": "vitest",
+		"postinstall": "node postinstall.js",
 		"release": "auto shipit"
 	},
 	"dependencies": {

@@ -5,7 +5,7 @@ Git worktree manager — switch branches like `cd`.
 Git's worktree interface is powerful but clunky. `trees` wraps it in a simple, opinionated CLI so jumping between branches feels natural.
 
 ```
-tree my-feature      # create worktree + cd into it
+tree up my-feature   # create worktree + cd into it
 tree down            # cd back to main
 tree list            # see all worktrees + dirty status
 tree switch          # interactive picker
@@ -16,30 +16,20 @@ tree remove my-feature
 
 ```bash
 npm install -g trees-cli
-```
-
-Then install the shell function (required for `cd` to work):
-
-```bash
-trees install
 source ~/.zshrc   # or ~/.bashrc
 ```
 
-After that, use the `tree` command (not `trees`).
-
-## Why two commands?
-
-A Node process can't change your shell's directory — that's a hard OS limitation. The `trees install` step adds a tiny shell wrapper called `tree` that runs `trees` under the hood and handles the `cd` for you.
+The install automatically adds a `tree` shell function to your `~/.zshrc` and/or `~/.bashrc`. This wrapper is needed because a Node process can't change your shell's directory — `tree` runs `trees` under the hood and handles the `cd` for you.
 
 ## Commands
 
-### `tree <branch>`
+### `tree up <branch>`
 
 Switch to a branch worktree, creating it if it doesn't exist yet.
 
 ```bash
-tree main              # switch to main
-tree feature/my-work   # create worktree + switch
+tree up main              # switch to main
+tree up feature/my-work   # create worktree + switch
 ```
 
 Worktrees are stored at `~/.trees/repositories/<repo>/<branch>`.
@@ -90,10 +80,6 @@ tree config clear setup               # remove all setup commands
 
 Hooks can be saved globally (`~/.trees/config.json`) or locally (`.treesrc.json` in the repo root). You'll be prompted each time — the default is smart: local if a local config already exists, global otherwise.
 
-### `tree install`
-
-Install the `tree` shell function into `~/.zshrc` and/or `~/.bashrc`. Idempotent — safe to run multiple times.
-
 ## Configuration
 
 **Global** — applies to a named repo across all machines:
@@ -137,8 +123,7 @@ cd trees
 npm install
 npm run build
 npm link        # makes `trees` available in your PATH
-trees install   # install the `tree` shell function
-source ~/.zshrc
+source ~/.zshrc # shell function is auto-installed by postinstall
 ```
 
 ### Development
@@ -155,14 +140,13 @@ Test your changes directly with `tree <command>` in any git repo.
 src/
   index.ts          # CLI entrypoint (commander)
   commands/
-    up.ts           # tree <branch>
+    up.ts           # tree up <branch>
     down.ts         # tree down
     remove.ts       # tree remove <branch>
     list.ts         # tree list
     switch.ts       # tree switch
     clean.ts        # tree clean
     config.ts       # tree config
-    install.ts      # tree install
   lib/
     git.ts          # git operations (child_process)
     config.ts       # load/merge global + per-repo config
@@ -173,10 +157,13 @@ src/
 
 ### The `cd` mechanism
 
-`tree <branch>` needs to change your shell's directory. Since Node can't do that directly, the output protocol works like this:
+`tree up <branch>` needs to change your shell's directory. Since Node can't do that directly, the mechanism works like this:
 
-1. `trees` (Node) prints `__TREES_CD__:/path/to/worktree` as the last line
-2. The `tree` shell function reads that line and runs `cd`
+1. The `tree` shell function creates a temp file and passes it via `TREES_CD_FILE`
+2. `trees` (Node) writes the target path to that file
+3. The shell function reads the file and runs `cd`
+
+This approach lets `trees` run with a direct TTY connection, so interactive prompts (like `tree switch` or `tree config add`) work correctly.
 
 ### Releasing
 

@@ -7,12 +7,13 @@ const MARKER = "# trees-cli shell integration";
 const SHELL_FUNCTION = `
 ${MARKER}
 tree() {
-  local output
-  output=$(trees "$@" 2>&1)
+  local tmpfile
+  tmpfile=$(mktemp "${"\${TMPDIR:-/tmp}"}/trees-cd.XXXXXX")
+  TREES_CD_FILE="$tmpfile" trees "$@"
   local exit_code=$?
   local cd_path
-  cd_path=$(echo "$output" | grep '^__TREES_CD__:' | tail -1 | sed 's/^__TREES_CD__://')
-  echo "$output" | grep -v '^__TREES_CD__:'
+  cd_path=$(cat "$tmpfile" 2>/dev/null)
+  rm -f "$tmpfile"
   [[ -n "$cd_path" ]] && cd "$cd_path"
   return $exit_code
 }
