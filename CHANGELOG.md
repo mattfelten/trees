@@ -1,3 +1,15 @@
+# v0.1.3 (Mon Mar 23 2026)
+
+#### 🐛 Bug Fix
+
+- Add branch tab-completion for zsh and bash [#5](https://github.com/mattfelten/trees/pull/5) ([@mattfelten](https://github.com/mattfelten))
+
+#### Authors: 1
+
+- Matt Felten ([@mattfelten](https://github.com/mattfelten))
+
+---
+
 # v0.1.2 (Sun Mar 22 2026)
 
 #### 🐛 Bug Fix
