@@ -10,6 +10,7 @@ import {
   configAddCommand,
   configClearCommand,
 } from "./commands/config.js";
+import { completionsCommand } from "./commands/completions.js";
 
 const program = new Command();
 
@@ -78,6 +79,11 @@ const configClear = configCmd
   });
 
 void configClear;
+
+program
+  .command("completions", { hidden: true })
+  .argument("[words...]")
+  .action(completionsCommand);
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err);

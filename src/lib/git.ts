@@ -131,3 +131,15 @@ export function getLocalBranches(cwd = process.cwd()): string[] {
 export function getCurrentWorktreePath(cwd = process.cwd()): string {
   return exec("git rev-parse --show-toplevel", cwd);
 }
+
+export function getWorktreeBranches(cwd = process.cwd()): string[] {
+  const output = exec("git worktree list --porcelain", cwd);
+  const entries = output.split("\n\n").filter(Boolean);
+  return entries
+    .slice(1) // skip main worktree
+    .map((entry) => {
+      const branchLine = entry.split("\n").find((l) => l.startsWith("branch "));
+      return branchLine ? branchLine.slice(7).replace("refs/heads/", "") : null;
+    })
+    .filter((b): b is string => b !== null);
+}
