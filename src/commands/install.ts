@@ -1,11 +1,12 @@
-import { existsSync, readFileSync, appendFileSync } from "fs";
+import { existsSync, readFileSync, appendFileSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import chalk from "chalk";
 
-const MARKER = "# trees-cli shell integration";
+const MARKER_START = "# trees-cli shell integration";
+const MARKER_END = "# end trees-cli shell integration";
 const SHELL_FUNCTION = `
-${MARKER}
+${MARKER_START}
 tree() {
   local tmpfile
   tmpfile=$(mktemp "${"\${TMPDIR:-/tmp}"}/trees-cd.XXXXXX")
@@ -17,7 +18,24 @@ tree() {
   [[ -n "$cd_path" ]] && cd "$cd_path"
   return $exit_code
 }
-# end trees-cli shell integration
+if [ -n "$ZSH_VERSION" ]; then
+  _tree_completions() {
+    local -a completions
+    completions=("\${(@f)$(trees completions \${words[2,-1]} 2>/dev/null)}")
+    _describe 'values' completions
+  }
+  compdef _tree_completions tree
+fi
+if [ -n "$BASH_VERSION" ]; then
+  _tree_completions() {
+    local cur="\${COMP_WORDS[COMP_CWORD]}"
+    local candidates
+    candidates=$(trees completions "\${COMP_WORDS[@]:1}" 2>/dev/null)
+    COMPREPLY=($(compgen -W "$candidates" -- "$cur"))
+  }
+  complete -F _tree_completions tree
+fi
+${MARKER_END}
 `;
 
 function installToFile(rcPath: string, shell: string): boolean {
@@ -26,10 +44,17 @@ function installToFile(rcPath: string, shell: string): boolean {
     return false;
   }
 
-  const contents = readFileSync(rcPath, "utf8");
-  if (contents.includes(MARKER)) {
-    console.log(chalk.dim(`  ${shell}: already installed (${rcPath})`));
-    return false;
+  let contents = readFileSync(rcPath, "utf8");
+  const blockRegex = new RegExp(
+    `\\n?${MARKER_START}[\\s\\S]*?${MARKER_END}\\n?`
+  );
+
+  if (blockRegex.test(contents)) {
+    // Replace existing block
+    contents = contents.replace(blockRegex, SHELL_FUNCTION);
+    writeFileSync(rcPath, contents);
+    console.log(chalk.green(`  ✓ ${shell}: updated (${rcPath})`));
+    return true;
   }
 
   appendFileSync(rcPath, SHELL_FUNCTION);

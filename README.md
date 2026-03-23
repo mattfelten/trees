@@ -80,6 +80,17 @@ tree config clear setup               # remove all setup commands
 
 Hooks can be saved globally (`~/.trees/config.json`) or locally (`.treesrc.json` in the repo root). You'll be prompted each time — the default is smart: local if a local config already exists, global otherwise.
 
+## Tab Completion
+
+Tab completion is installed automatically alongside the shell function. It works in both zsh and bash:
+
+- `tree <TAB>` — completes subcommands (`up`, `down`, `remove`, `list`, `switch`, `clean`, `config`)
+- `tree up <TAB>` — completes all local git branches
+- `tree remove <TAB>` — completes only active worktree branches
+- `tree config <TAB>` — completes `add`, `clear`
+
+If you installed before tab completion was added, run `trees install` to update the shell function, then reload your shell.
+
 ## Configuration
 
 **Global** — applies to a named repo across all machines:
